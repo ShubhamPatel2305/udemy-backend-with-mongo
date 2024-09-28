@@ -32,3 +32,5 @@ router.post("/addcourse",adminAddCourseMiddleware,(req,res)=>{
         res.json(course);
     });
 });
+
+module.exports=router;

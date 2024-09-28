@@ -8,7 +8,7 @@ const userSchema=z.object({
     pass:z.string().min(8)
 });
 
-function userValidationsMiddleware(req,res,next){
+function userInputValidationMiddleware(req,res,next){
     // input validations
     const result=userSchema.safeParse(req.body);
     if(!result.success){
@@ -16,6 +16,28 @@ function userValidationsMiddleware(req,res,next){
     }
     next();
 }
+
+function userSignupValidationsMiddleware(req,res,next){
+    // check if user already exists
+    const uname=req.body.uname;
+    const user=User.findOne({uname});
+    if(user){
+        return res.status(400).json({message:"User Already Exists"});
+    }
+    next();
+}
+
+function userLoginValidationsMiddleware(req,res,next){
+    //check if user exists in db by checking both uname and pass
+    const uname=req.body.uname;
+    const pass=req.body.pass;
+    const user=User.findOne({uname,pass});
+    if(!user){
+        return res.status(400).json({message:"Invalid Credentials"});
+    }
+    next();
+}
+
 
 function userCourseValidationMiddleware(req,res,next){
     // input validations
@@ -34,6 +56,8 @@ function userCourseValidationMiddleware(req,res,next){
 
 //export
 module.exports={
-    userValidationsMiddleware,
+    userInputValidationMiddleware,
+    userSignupValidationsMiddleware,
+    userLoginValidationsMiddleware,
     userCourseValidationMiddleware
 };
