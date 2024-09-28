@@ -67,7 +67,7 @@ const UserSchema = new mongoose.Schema({
     },
     courses: [
         {
-            courseId: {
+            cid: {
                 type: Number,
                 ref: 'Course',
                 required: true

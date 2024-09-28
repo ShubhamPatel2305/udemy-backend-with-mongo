@@ -38,6 +38,25 @@ function userLoginValidationsMiddleware(req,res,next){
     next();
 }
 
+//middleware to verify that user trying to get course list has valid jwt token and that token user exists in db
+function userValidateTokenMiddleware(req,res,next){
+    const token=req.headers["authorization"];
+    if(!token){
+        res.status(404).send("No token is given in headers");
+    }
+    jwt.verify(token,secret,(err,data)=>{
+        if(err){
+            res.status(404).send("Invalid Token");
+        }
+        const uname=data.uname;
+        const user=User.findOne({uname});
+        if(!user){
+            res.status(404).send("User does not exist");
+        }
+        next();
+    });
+}
+
 
 function userCourseValidationMiddleware(req,res,next){
     // input validations
@@ -59,5 +78,6 @@ module.exports={
     userInputValidationMiddleware,
     userSignupValidationsMiddleware,
     userLoginValidationsMiddleware,
+    userValidateTokenMiddleware,
     userCourseValidationMiddleware
 };
