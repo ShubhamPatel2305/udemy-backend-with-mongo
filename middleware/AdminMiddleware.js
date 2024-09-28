@@ -1,5 +1,5 @@
 const jwt=require('jsonwebtoken');
-const { Admin } = require('../db')
+const { Admin } = require('../db/index')
 const secret="secret";
 
 
