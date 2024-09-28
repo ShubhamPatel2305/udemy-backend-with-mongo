@@ -1,79 +1,108 @@
 const { Router } = require("express");
+const jwt = require('jsonwebtoken');
+const { User, Course } = require("../db/index");
+const { 
+    userInputValidationMiddleware,
+    userSignupValidationsMiddleware,
+    userLoginValidationsMiddleware,
+    userValidateTokenMiddleware,
+    userCourseValidationMiddleware 
+} = require("../middleware/UserMiddleware");
+
+const secret = "secret";
 const router = Router();
-const { User,Course } = require("../db/index");
-const {userInputValidationMiddleware,userSignupValidationsMiddleware,userLoginValidationsMiddleware, userValidateTokenMiddleware, userCourseValidationMiddleware}= require("../middleware/UserMiddleware");
 
-// User Routes
-router.post('/signup',userInputValidationMiddleware ,userSignupValidationsMiddleware, (req, res) => {
+// User Signup
+router.post('/signup', userInputValidationMiddleware, userSignupValidationsMiddleware, async (req, res) => {
     // Implement user signup logic
-    //all checks done add user to db
-    const user=new User(req.body);
-    user.save((err,user)=>{
-        if(err){
-            return res.status(500).json({message:"Internal Server Error"});
+    // All checks done, add user to db
+    const user = new User(req.body);
+    
+    try {
+        await user.save(); // Use await to save the user
+        console.log(user);
+        res.status(200).json({ message: "User Created" });
+    } catch (err) {
+        // Handle different types of errors
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: err.message });
         }
-        res.status(200).json({message:"User Created"});
-    });
+        res.status(500).json({ message: "Internal Server Error" });
+    }
 });
 
-router.post('/signin',userInputValidationMiddleware,userLoginValidationsMiddleware, (req, res) => {
-    // all checks done generate token and send
-    const token=jwt.sign({uname:req.body.uname},secret);
-    res.status(200).json({token});
+
+// User Signin
+router.post('/signin', userInputValidationMiddleware, userLoginValidationsMiddleware, (req, res) => {
+    const token = jwt.sign({ uname: req.body.uname }, secret);
+    res.status(200).json({ token });
 });
 
-router.get('/courses', userValidateTokenMiddleware, (req, res) => {
-    //token verification done by middleware just display courses
-    Course.find({},(err,courses)=>{
-        if(err){
-            return res.status(500).json({message:"Internal Server Error"});
-        }
+// Get all courses
+router.get('/courses', userValidateTokenMiddleware, async (req, res) => {
+    try {
+        const courses = await Course.find({});
         res.status(200).json(courses);
-    });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+        
+    }
 });
 
-router.post('/courses/:courseId', userValidateTokenMiddleware, (req, res) => {
-    //user token verification done
-    //course purchase logic first check if course exists if exists store all course dataand add it to user 
-    //courses array and user token verification is already done
-    const courseId=req.params.courseId;
-    Course.findOne({cid:courseId},(err,data)=>{
-        if(err || !data){
-            res.status(404).send("No such course found");
+// Purchase a course
+router.post('/courses/:courseId', userValidateTokenMiddleware, async (req, res) => {
+    const courseId = req.params.courseId;
+    
+    try {
+        const course = await Course.findOne({ cid: courseId });
+        if (!course) {
+            return res.status(404).send("No such course found");
         }
-        //check if user is already purchased this course, no need of jwt token verification
-        const token=req.headers["authorization"];
-        const uname=jwt.decode(token).uname;
-        const user=User.findOne({uname});
-        let courseExists=false;
+
+        const token = req.headers["authorization"];
+        const uname = jwt.decode(token).uname;
+
+        const user = await User.findOne({ uname });
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        // Check if the course has already been purchased
+        const courseExist=false;
         for(let i=0;i<user.courses.length;i++){
-            if(user.courses[i].cid===courseId){
-                courseExists=true;
+            if(user.courses[i].courseId==courseId){
+                courseExist=true;
                 break;
             }
         }
-        if(courseExists){
-            res.status(400).send("Course already purchased");
+        if(courseExist){
+            return res.status(400).json({ message: "Course already purchased" });
         }
-        //add course to user courses array
-        user.courses.push(data);
-        user.save((err,user)=>{
-            if(err){
-                return res.status(500).json({message:"Internal Server Error"});
-            }
-            res.status(200).json({message:"Course Purchased"});
-        });
-    })
-    
+
+        // Add course to user courses array
+        const courseDetails= await Course.findOne({cid:courseId});
+        user.courses.push({cid:courseId, cname:courseDetails.cname, description:courseDetails.description, price:courseDetails.price }); // Ensure you push the correct structure
+        await user.save();
+        res.status(200).json({ message: "Course Purchased" });
+    } catch (err) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
 });
 
-router.get('/purchasedCourses', userValidateTokenMiddleware, (req, res) => {
-    // Implement fetching purchased courses logic
-    //user token verification done
-    const token=req.headers["authorization"];
-    const uname=jwt.decode(token).uname;
-    const user=User.findOne({uname});
-    res.status(200).json(user.courses);
+// Get purchased courses
+router.get('/   ', userValidateTokenMiddleware, async (req, res) => {
+    const token = req.headers["authorization"];
+    const uname = jwt.decode(token).uname;
+
+    try {
+        const user = await User.findOne({ uname });
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+        res.status(200).json(user.courses);
+    } catch (err) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
 });
 
-module.exports = router
+module.exports = router;

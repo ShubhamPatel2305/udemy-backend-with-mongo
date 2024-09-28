@@ -2,9 +2,11 @@ const mongoose = require('mongoose');
 const autoIncrement = require('mongoose-sequence')(mongoose); 
 
 // Connect to MongoDB
-mongoose.connect("mongodb+srv://admin:admin@cluster0.6c3q0.mongodb.net/udemy_clone", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+mongoose.connect("mongodb+srv://admin:admin@cluster0.6c3q0.mongodb.net/udemy_clone").then(() => {
+    console.log("Successfully connected to the database.");
+})
+.catch((error) => {
+    console.error("Error connecting to the database:", error);
 });
 
 // Admin Schema
@@ -24,9 +26,6 @@ const AdminSchema = new mongoose.Schema({
 
 // Course Schema
 const CourseSchema = new mongoose.Schema({
-    cid: {  // Define manually before plugin
-        type: Number
-    },
     cname: {
         type: String,
         required: true,
@@ -42,18 +41,16 @@ const CourseSchema = new mongoose.Schema({
     }
 });
 
-// Apply auto-increment plugin to cid after defining it
+// Apply auto-increment plugin to cid
 CourseSchema.plugin(autoIncrement, {
     id: 'course_counter',
     inc_field: 'cid',
     start_seq: 1
 });
 
+
 // User Schema
 const UserSchema = new mongoose.Schema({
-    uid: {  // Define manually before plugin
-        type: Number
-    },
     uname: {
         type: String,
         required: true,
