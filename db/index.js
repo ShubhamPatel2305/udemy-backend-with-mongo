@@ -29,7 +29,8 @@ const CourseSchema = new mongoose.Schema({
     },
     cname: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     description: {
         type: String,
