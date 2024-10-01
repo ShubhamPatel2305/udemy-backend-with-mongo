@@ -90,7 +90,7 @@ router.post('/courses/:courseId', userValidateTokenMiddleware, async (req, res) 
 });
 
 // Get purchased courses
-router.get('/   ', userValidateTokenMiddleware, async (req, res) => {
+router.get('/purchased', userValidateTokenMiddleware, async (req, res) => {
     const token = req.headers["authorization"];
     const uname = jwt.decode(token).uname;
 
