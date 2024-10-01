@@ -23,7 +23,7 @@ router.get("/courses", adminMiddleware, async (req, res) => {
 });
 
 // Add a new course
-router.post("/addcourse", adminAddCourseMiddleware, async (req, res) => {
+router.post("/addcourse",adminMiddleware, adminAddCourseMiddleware, async (req, res) => {
     try {
         const course = new Course(req.body);
         const savedCourse = await course.save(); // Await the save operation
